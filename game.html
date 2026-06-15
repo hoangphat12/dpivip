@@ -1,0 +1,463 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Rhythm Game - Auto Fix</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { 
+            background: #0a0a1a; 
+            height: 100vh; 
+            font-family: 'Arial', sans-serif;
+            touch-action: manipulation;
+            user-select: none;
+            overflow: hidden;
+        }
+        #container { 
+            width: 100%; 
+            height: 100vh; 
+            position: relative;
+            background: linear-gradient(180deg, #0f0f23, #1a1a2e);
+        }
+        #stats {
+            background: rgba(0,0,0,0.9);
+            padding: 15px;
+            color: white;
+            position: absolute;
+            top: 0;
+            width: 100%;
+            z-index: 10;
+            font-size: 16px;
+        }
+        .stat-row {
+            display: flex;
+            justify-content: space-between;
+            margin: 3px 0;
+        }
+        #game-area {
+            position: absolute;
+            top: 100px;
+            bottom: 140px;
+            width: 100%;
+        }
+        .lane {
+            position: absolute;
+            top: 0;
+            bottom: 0;
+            width: 25%;
+            border-right: 2px solid rgba(255,255,255,0.1);
+        }
+        .lane:nth-child(even) { background: rgba(255,255,255,0.02); }
+        #judge-line {
+            position: absolute;
+            bottom: 80px;
+            left: 5%;
+            right: 5%;
+            height: 5px;
+            background: linear-gradient(90deg, #ff6b6b, #ffd93d, #6bff6b, #6b6bff);
+            box-shadow: 0 0 30px rgba(255,255,255,0.6);
+            border-radius: 5px;
+        }
+        .note {
+            position: absolute;
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            color: white;
+            font-size: 18px;
+            box-shadow: 0 0 20px currentColor;
+            transition: transform 0.05s;
+            margin-left: -30px;
+        }
+        .note-fixed-lotam {
+            background: #ffd93d;
+            box-shadow: 0 0 25px #ffd93d;
+            animation: pulse-yellow 0.5s infinite;
+        }
+        .note-fixed-nhetam {
+            background: #ff6bff;
+            box-shadow: 0 0 25px #ff6bff;
+            animation: pulse-purple 0.5s infinite;
+        }
+        .note-ok {
+            background: #6bff6b;
+            box-shadow: 0 0 25px #6bff6b;
+        }
+        @keyframes pulse-yellow {
+            0%, 100% { box-shadow: 0 0 25px #ffd93d; }
+            50% { box-shadow: 0 0 40px #ffd93d, 0 0 60px #ffd93d; }
+        }
+        @keyframes pulse-purple {
+            0%, 100% { box-shadow: 0 0 25px #ff6bff; }
+            50% { box-shadow: 0 0 40px #ff6bff, 0 0 60px #ff6bff; }
+        }
+        .judgment-text {
+            position: absolute;
+            font-size: 28px;
+            font-weight: bold;
+            animation: flyUp 0.8s forwards;
+            pointer-events: none;
+            z-index: 5;
+        }
+        @keyframes flyUp {
+            0% { opacity: 1; transform: translateY(0) scale(1); }
+            100% { opacity: 0; transform: translateY(-100px) scale(1.5); }
+        }
+        #controls {
+            position: absolute;
+            bottom: 0;
+            width: 100%;
+            height: 140px;
+            display: flex;
+            background: rgba(0,0,0,0.7);
+            padding: 10px;
+        }
+        .tap-btn {
+            flex: 1;
+            margin: 8px;
+            border-radius: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 28px;
+            font-weight: bold;
+            background: rgba(255,255,255,0.15);
+            border: 3px solid rgba(255,255,255,0.3);
+            cursor: pointer;
+            transition: all 0.1s;
+            -webkit-tap-highlight-color: transparent;
+        }
+        .tap-btn:active {
+            background: rgba(255,255,255,0.5);
+            transform: scale(0.9);
+            box-shadow: 0 0 40px rgba(255,255,255,0.8);
+        }
+        .fix-badge {
+            position: absolute;
+            top: -20px;
+            font-size: 12px;
+            background: rgba(0,0,0,0.8);
+            padding: 3px 8px;
+            border-radius: 10px;
+            white-space: nowrap;
+        }
+        #start-screen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.95);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 100;
+            color: white;
+            padding: 20px;
+        }
+        #start-screen h1 {
+            font-size: 36px;
+            margin-bottom: 20px;
+            background: linear-gradient(45deg, #ffd93d, #ff6bff);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        #start-screen .info {
+            text-align: center;
+            margin: 10px;
+            line-height: 1.8;
+        }
+        #start-btn {
+            background: linear-gradient(45deg, #ff6b6b, #ffd93d);
+            border: none;
+            padding: 20px 50px;
+            border-radius: 30px;
+            font-size: 24px;
+            color: white;
+            font-weight: bold;
+            margin-top: 30px;
+            box-shadow: 0 5px 25px rgba(255,107,107,0.5);
+            cursor: pointer;
+        }
+        .note-hit {
+            animation: hitAnim 0.3s forwards;
+        }
+        @keyframes hitAnim {
+            0% { transform: scale(1); opacity: 1; }
+            100% { transform: scale(2); opacity: 0; }
+        }
+    </style>
+</head>
+<body>
+    <div id="container">
+        <div id="stats">
+            <div class="stat-row">
+                <span>🎯 <b>Score: <span id="score">0</span></b></span>
+                <span>🔥 <b>Combo: <span id="combo">0</span>x</b></span>
+            </div>
+            <div class="stat-row">
+                <span style="color:#ffd93d">🔧 Lố tâm: <b id="lotam">0</b></span>
+                <span style="color:#ff6bff">🔧 Nhẹ tâm: <b id="nhetam">0</b></span>
+                <span style="color:#6bff6b">✅ Chuẩn: <b id="ok">0</b></span>
+            </div>
+        </div>
+        
+        <div id="game-area">
+            <div class="lane" style="left:0%"></div>
+            <div class="lane" style="left:25%"></div>
+            <div class="lane" style="left:50%"></div>
+            <div class="lane" style="left:75%"></div>
+            <div id="judge-line"></div>
+        </div>
+        
+        <div id="controls">
+            <button class="tap-btn" data-lane="0">D</button>
+            <button class="tap-btn" data-lane="1">F</button>
+            <button class="tap-btn" data-lane="2">J</button>
+            <button class="tap-btn" data-lane="3">K</button>
+        </div>
+        
+        <div id="start-screen">
+            <h1>🎵 Rhythm Game</h1>
+            <div class="info">
+                <p>🟡 <b>Vàng</b> = Lố tâm (đã fix)</p>
+                <p>🟣 <b>Tím</b> = Nhẹ tâm (đã fix)</p>
+                <p>🟢 <b>Xanh</b> = Timing chuẩn</p>
+                <p style="margin-top:10px;font-size:14px">👆 Chạm nút D F J K để chơi</p>
+            </div>
+            <button id="start-btn">▶ BẮT ĐẦU</button>
+        </div>
+    </div>
+
+    <script>
+        // Game Engine
+        const BPM = 120;
+        const BEAT_DURATION = 60.0 / BPM;
+        const NOTE_SPEED = 300;
+        const JUDGE_LINE_Y = window.innerHeight - 140 - 80;
+        const PERFECT_WINDOW = 0.05;
+        const GREAT_WINDOW = 0.10;
+        const GOOD_WINDOW = 0.15;
+        const MISS_WINDOW = 0.20;
+        
+        let score = 0, combo = 0, maxCombo = 0;
+        let gameStarted = false, startTime = 0;
+        let notesOnScreen = [], fixedNotes = [];
+        let fixStats = { lotam: 0, nhetam: 0, ok: 0 };
+        let judgments = { PERFECT: 0, GREAT: 0, GOOD: 0, MISS: 0 };
+        
+        const originalNotes = [
+            { time: 1.0, lane: 0, note: "C" },
+            { time: 1.42, lane: 1, note: "D" },
+            { time: 2.0, lane: 2, note: "E" },
+            { time: 2.55, lane: 3, note: "F" },
+            { time: 3.0, lane: 0, note: "G" },
+            { time: 3.38, lane: 1, note: "A" },
+            { time: 4.1, lane: 2, note: "B" },
+            { time: 4.5, lane: 3, note: "C" },
+            { time: 5.0, lane: 0, note: "D" },
+            { time: 5.45, lane: 2, note: "E" },
+            { time: 6.0, lane: 1, note: "F" },
+            { time: 6.6, lane: 3, note: "G" },
+            { time: 7.0, lane: 0, note: "A" },
+            { time: 7.5, lane: 2, note: "B" },
+            { time: 8.0, lane: 1, note: "C" },
+        ];
+        
+        function fixAllTiming(notes) {
+            const fixed = [];
+            fixStats = { lotam: 0, nhetam: 0, ok: 0 };
+            
+            notes.forEach(note => {
+                const originalTime = note.time;
+                const nearestBeat = Math.round(originalTime / BEAT_DURATION) * BEAT_DURATION;
+                const offset = originalTime - nearestBeat;
+                const fixedNote = { ...note, originalTime };
+                
+                if (offset < -PERFECT_WINDOW) {
+                    fixedNote.time = nearestBeat;
+                    fixedNote.fixed = 'lotam';
+                    fixStats.lotam++;
+                } else if (offset > PERFECT_WINDOW) {
+                    fixedNote.time = nearestBeat;
+                    fixedNote.fixed = 'nhetam';
+                    fixStats.nhetam++;
+                } else {
+                    fixedNote.fixed = 'ok';
+                    fixStats.ok++;
+                }
+                fixed.push(fixedNote);
+            });
+            return fixed;
+        }
+        
+        function startGame() {
+            document.getElementById('start-screen').style.display = 'none';
+            gameStarted = true;
+            startTime = performance.now() / 1000;
+            fixedNotes = fixAllTiming(originalNotes);
+            updateStats();
+            requestAnimationFrame(gameLoop);
+        }
+        
+        function spawnNotes(currentTime) {
+            fixedNotes.forEach(note => {
+                if (note.spawned) return;
+                const timeUntilJudge = note.time - currentTime;
+                if (timeUntilJudge <= (JUDGE_LINE_Y / NOTE_SPEED)) {
+                    note.spawned = true;
+                    const noteEl = document.createElement('div');
+                    noteEl.className = `note note-fixed-${note.fixed}`;
+                    noteEl.innerHTML = `${note.note}<span class="fix-badge">${note.fixed === 'lotam' ? 'SỚM' : note.fixed === 'nhetam' ? 'MUỘN' : '✓'}</span>`;
+                    noteEl.style.left = `${note.lane * 25 + 12.5}%`;
+                    noteEl.noteData = note;
+                    document.getElementById('game-area').appendChild(noteEl);
+                    notesOnScreen.push(noteEl);
+                }
+            });
+        }
+        
+        function updateNotes(currentTime) {
+            notesOnScreen.forEach((noteEl, index) => {
+                const noteData = noteEl.noteData;
+                const timeUntilJudge = noteData.time - currentTime;
+                const yPos = JUDGE_LINE_Y - (timeUntilJudge * NOTE_SPEED) - 30;
+                noteEl.style.top = `${yPos}px`;
+                
+                if (timeUntilJudge < -MISS_WINDOW && !noteData.judged) {
+                    handleMiss(noteData, noteEl, index);
+                }
+            });
+        }
+        
+        function handleTap(lane) {
+            if (!gameStarted) return;
+            const currentTime = (performance.now() / 1000) - startTime;
+            let closestNote = null, closestIndex = -1, minDiff = Infinity;
+            
+            notesOnScreen.forEach((noteEl, index) => {
+                const noteData = noteEl.noteData;
+                if (noteData.lane === lane && !noteData.judged) {
+                    const diff = Math.abs(currentTime - noteData.time);
+                    if (diff < minDiff && diff < MISS_WINDOW) {
+                        minDiff = diff;
+                        closestNote = noteData;
+                        closestIndex = index;
+                    }
+                }
+            });
+            
+            if (closestNote) {
+                judgeNote(closestNote, minDiff, notesOnScreen[closestIndex], closestIndex);
+            }
+        }
+        
+        function judgeNote(noteData, timeDiff, noteEl, index) {
+            let judgment, points, color;
+            if (timeDiff <= PERFECT_WINDOW) { judgment = 'PERFECT'; points = 300; color = '#ffd93d'; }
+            else if (timeDiff <= GREAT_WINDOW) { judgment = 'GREAT'; points = 200; color = '#6bff6b'; }
+            else if (timeDiff <= GOOD_WINDOW) { judgment = 'GOOD'; points = 100; color = '#6b6bff'; }
+            else { judgment = 'MISS'; points = 0; color = '#ff6b6b'; }
+            
+            noteData.judged = true;
+            judgments[judgment]++;
+            
+            if (judgment !== 'MISS') {
+                combo++;
+                maxCombo = Math.max(maxCombo, combo);
+                score += points * (1 + Math.floor(combo / 10));
+            } else {
+                combo = 0;
+            }
+            
+            noteEl.classList.add('note-hit');
+            setTimeout(() => noteEl.remove(), 300);
+            notesOnScreen.splice(index, 1);
+            
+            showJudgment(noteData.lane, judgment, color, noteData.fixed);
+            updateStats();
+        }
+        
+        function handleMiss(noteData, noteEl, index) {
+            noteData.judged = true;
+            judgments.MISS++;
+            combo = 0;
+            noteEl.classList.add('note-hit');
+            setTimeout(() => noteEl.remove(), 300);
+            notesOnScreen.splice(index, 1);
+            showJudgment(noteData.lane, 'MISS', '#ff6b6b', noteData.fixed);
+            updateStats();
+        }
+        
+        function showJudgment(lane, text, color, fixType) {
+            const el = document.createElement('div');
+            el.className = 'judgment-text';
+            el.textContent = text;
+            if (fixType !== 'ok') el.textContent += ` (${fixType === 'lotam' ? 'SỚM' : 'MUỘN'})`;
+            el.style.color = color;
+            el.style.left = `${lane * 25 + 12.5}%`;
+            el.style.bottom = `${window.innerHeight - JUDGE_LINE_Y - 140}px`;
+            document.getElementById('game-area').appendChild(el);
+            setTimeout(() => el.remove(), 800);
+        }
+        
+        function updateStats() {
+            document.getElementById('score').textContent = score;
+            document.getElementById('combo').textContent = combo;
+            document.getElementById('lotam').textContent = fixStats.lotam;
+            document.getElementById('nhetam').textContent = fixStats.nhetam;
+            document.getElementById('ok').textContent = fixStats.ok;
+        }
+        
+        function checkGameEnd(currentTime) {
+            const lastNote = Math.max(...originalNotes.map(n => n.time));
+            if (currentTime > lastNote + 2 && notesOnScreen.length === 0 && gameStarted) {
+                gameStarted = false;
+                setTimeout(() => {
+                    alert(`🎉 HOÀN THÀNH!\n\n📊 Score: ${score}\n🔥 Max Combo: ${maxCombo}x\n\n🔧 Đã fix:\n• Lố tâm: ${fixStats.lotam} notes\n• Nhẹ tâm: ${fixStats.nhetam} notes\n• Chuẩn: ${fixStats.ok} notes\n\n🎯 Phán xét:\n• PERFECT: ${judgments.PERFECT}\n• GREAT: ${judgments.GREAT}\n• GOOD: ${judgments.GOOD}\n• MISS: ${judgments.MISS}`);
+                }, 100);
+            }
+        }
+        
+        function gameLoop(timestamp) {
+            if (!gameStarted) return;
+            const currentTime = (timestamp / 1000) - startTime;
+            spawnNotes(currentTime);
+            updateNotes(currentTime);
+            checkGameEnd(currentTime);
+            requestAnimationFrame(gameLoop);
+        }
+        
+        // Event Listeners
+        document.querySelectorAll('.tap-btn').forEach(btn => {
+            btn.addEventListener('touchstart', (e) => {
+                e.preventDefault();
+                handleTap(parseInt(btn.dataset.lane));
+            });
+            btn.addEventListener('mousedown', () => {
+                handleTap(parseInt(btn.dataset.lane));
+            });
+        });
+        
+        document.addEventListener('keydown', (e) => {
+            const keys = { 'd': 0, 'f': 1, 'j': 2, 'k': 3 };
+            if (keys[e.key.toLowerCase()] !== undefined) {
+                handleTap(keys[e.key.toLowerCase()]);
+            }
+        });
+        
+        document.getElementById('start-btn').addEventListener('click', startGame);
+        document.getElementById('start-btn').addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            startGame();
+        });
+    </script>
+</body>
+</html>
